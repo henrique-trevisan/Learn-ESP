@@ -1,4 +1,10 @@
+// Libraries to include
 #include <Arduino.h>
+
+// Compiler defines
+
+// Global variables
+static constexpr int ADC_PIN = 34;  // GPIO34 (ADC1)
 
 void setup() {
   
@@ -6,21 +12,18 @@ void setup() {
   delay(200);  // Wait to ensure the setting
 
   pinMode(LED_BUILTIN, OUTPUT);  // Declares the builtin led as an output
-  Serial.println("Boot OK");
-
+  pinMode(ADC_PIN, INPUT);  // Declares the ADC pin as input
+  Serial.println("ADC test starting...");
 }
 
 void loop() {
-  // Declares an unsigned integer with 32bits and initialize it
-  static uint32_t last = 0;
-  
-  // If 500ms passed
-  if (millis() - last >= 500){
-    // Update the current time
-    last = millis();
-    // Inverts the LED state
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-    // Send through serial that the LED toggled
-    Serial.println("Tick");
-  }
+  // Reads the raw ADC data
+  int raw = analogRead(ADC_PIN);
+  // Convert it to volts
+  float volts = (raw / 4095.0f) * 3.3f;
+
+  // Format and write the readings through serial
+  Serial.printf("\rRaw: %4i \tVolts: %.2f", raw, volts);
+  // Delay for convinience
+  delay(1);
 }
