@@ -1,29 +1,35 @@
 // Libraries to include
 #include <Arduino.h>
+#include <WiFi.h>
+#include "secrets.h"
 
 // Compiler defines
 
 // Global variables
-static constexpr int ADC_PIN = 34;  // GPIO34 (ADC1)
+
 
 void setup() {
   
   Serial.begin(115200);  // Initialize the serial communication
   delay(200);  // Wait to ensure the setting
 
-  pinMode(LED_BUILTIN, OUTPUT);  // Declares the builtin led as an output
-  pinMode(ADC_PIN, INPUT);  // Declares the ADC pin as input
-  Serial.println("ADC test starting...");
+  Serial.printf("\nConnecting to SSID: %s\n", WIFI_SSID);
+  WiFi.mode(WIFI_STA);  // Set the wifi as a station (client)
+  WiFi.begin(WIFI_SSID, WIFI_PASS);  // Try to connect to the network using the SSID and password
+
+  // Wait for the device to connect to Wi-Fi
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(250);
+    Serial.printf(".");
+  }
+
+  // Successfully connected to the WiFi with the given ip
+  // Convert the local IPAddress object to an arduino string (the class string)
+  // Convert the arduino string to a C language string (char*[])
+  Serial.printf("\nConnected. IP = %s\n", WiFi.localIP().toString().c_str());
 }
 
 void loop() {
-  // Reads the raw ADC data
-  int raw = analogRead(ADC_PIN);
-  // Convert it to volts
-  float volts = (raw / 4095.0f) * 3.3f;
-
-  // Format and write the readings through serial
-  Serial.printf("\rRaw: %4i \tVolts: %.2f", raw, volts);
   // Delay for convinience
-  delay(1);
+  delay(10);
 }
