@@ -1,35 +1,60 @@
-// Libraries to include
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WebServer.h>
 #include "secrets.h"
 
-// Compiler defines
+static constexpr int ADC_PIN = 34;          // ADC1 pin (Wi-Fi safe)
+WebServer server(80);
 
-// Global variables
+int readAdcRaw() {
+  return analogRead(ADC_PIN);              // 0..4095 (typical)
+}
 
+float rawToVolts(int raw) {
+  return (raw / 4095.0f) * 3.3f;           // rough conversion
+}
+
+void handleRoot() {
+  int raw = readAdcRaw();
+  float v = rawToVolts(raw);
+
+  // Tiny HTML response
+  String html;
+  html += "<!doctype html><html><head><meta charset='utf-8'>";
+  html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+  html += "<title>ESP32 ADC</title></head><body>";
+  html += "<h1>ESP32 ADC</h1>";
+  html += "<p>Raw: " + String(raw) + "</p>";
+  html += "<p>Volts (approx): " + String(v, 3) + " V</p>";
+  html += "<p><a href='/'>Refresh</a></p>";
+  html += "</body></html>";
+
+  server.send(200, "text/html", html);
+}
 
 void setup() {
-  
-  Serial.begin(115200);  // Initialize the serial communication
-  delay(200);  // Wait to ensure the setting
+  Serial.begin(115200);
+  delay(200);
+
+  pinMode(ADC_PIN, INPUT);
 
   Serial.printf("\nConnecting to SSID: %s\n", WIFI_SSID);
-  WiFi.mode(WIFI_STA);  // Set the wifi as a station (client)
-  WiFi.begin(WIFI_SSID, WIFI_PASS);  // Try to connect to the network using the SSID and password
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
 
-  // Wait for the device to connect to Wi-Fi
   while (WiFi.status() != WL_CONNECTED) {
     delay(250);
-    Serial.printf(".");
+    Serial.print(".");
   }
 
-  // Successfully connected to the WiFi with the given ip
-  // Convert the local IPAddress object to an arduino string (the class string)
-  // Convert the arduino string to a C language string (char*[])
-  Serial.printf("\nConnected. IP = %s\n", WiFi.localIP().toString().c_str());
+  Serial.print("\nConnected. IP = ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/", handleRoot);
+  server.begin();
+  Serial.println("HTTP server started (port 80).");
 }
 
 void loop() {
-  // Delay for convinience
-  delay(10);
+  server.handleClient();   // this is essential: processes incoming HTTP requests
 }
